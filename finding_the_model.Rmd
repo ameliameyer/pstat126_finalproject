@@ -1,0 +1,115 @@
+---
+title: "finding_the_model"
+author: "Amelia Meyer"
+date: "5/26/2020"
+output: pdf_document
+---
+
+We'll be using data from the "Census Income Data Set" for our project.
+
+```{r}
+# Upload the code in R through the following command.
+# when you add column names, make sure there is a space in between the comma and the name or it won't read it as its own column
+adult <- read.table('adult_withoutcommas.txt', header = T)
+names(adult)
+attach(adult)
+head(adult)
+tail(adult)
+```
+
+Now that we have our data entered, we want to figure out the best predictors to use.
+After doing the proper calculations using forward selection with AIC, we arrive at the following model:
+cptlgain ~ income + edu + cptlloss + wrkclass + age + fam + wrkhours.
+Our response variable is cptlgain, a continuous variable.
+Our predictors are as follows:
+x1: income 
+x2: edu
+x3: cptlloss
+x4: wrkclass
+x5: age
+x6: fam
+x7: wrkhrs
+
+```{r}
+
+# Finding predictors (refer to days 24 and 26)
+# Using forward selection (bottom up method) with AIC
+mod.0 <- lm(cptlgain ~ 1, data = adult) 
+mod.full <- lm(cptlgain ~., data = adult) # including all predictors in lm()
+step(mod.0, scope = list(lower = mod.0, upper = mod.full), direction = "forward") #Uses AIC by default
+
+# We can see that the AIC once income is added is the smallest value and is less than the AIC for the intercept (just M0), therefore it would be appropriate to add it to the model
+# Repeat step 2 and you'll arrive at the model
+
+# cptlgain ~ income + edu + cptlloss + wrkclass + age + fam + wrkhrs
+# With the following AIC: AIC=577364.8
+
+```
+
+We can take the above model as our final product, but we also might want to check using other methods. 
+From the BIC, the appropriate model is as follows:
+cptlgain ~ income + edu + cptlloss+ wrkclass
+Our response variable is cptlgain, a continuous variable.
+Our predictors are as follows:
+x1: income 
+x2: edu
+x3: cptlloss
+x4: wrkclass
+You can see that we have three less predictors in this model: age, fam, and wrkhours. The outputted model for forward selection using AIC and BIC are not always the same. Let's check it using some more methods. 
+
+```{r}
+# Finding predictors (see days 24 and 26)
+# Using forward selection (bottom up method) with BIC
+## step() function will still print out "AIC", but in fact it is using BIC
+n <- length(adult$cptlgain) # sample size
+step(mod.0, scope = list(lower = mod.0, upper = mod.full), direction = 'forward',k = log(n), trace = 0)
+
+```
+
+Using backward selection with AIC, we arrive at the following model:
+cptlgain ~ age + wrkclass + edu + fam + cptlloss + wrkhrs + income
+Which has the following AIC:  AIC=577364.8
+This is equivalent to the model we arrived at using the first method of forward selection with AIC just with a different order to the predictors. 
+Our response variable is cptlgain, a continuous variable.
+Our predictors are as follows:
+x1: age
+x2: wrkclass
+x3: edu
+x4: fam
+x5: cptlloss
+x6: wrkhrs
+x7: income
+
+```{r}
+# Finding predictors
+# Using backward selection (top down method) with AIC
+step(mod.full, scope = list(lower = mod.0, upper = mod.full), direction = 'backward')
+```
+
+Using backward selection with BIC, we arrive at the following model:
+cptlgain ~ wrkclass + edu + cptlloss + income
+Which is the same model as the one we arrived at using the forward selection method with BIC, but again in a different order. 
+Our response variable is cptlgain, a continuous variable.
+Our predictors are as follows:
+x1: wrkclass
+x2: edu
+x3: cptlloss
+x4: income
+
+```{r}
+# Finding predictors
+# Using backward selection (top down method) with BIC
+step(mod.full, scope = list(lower = mod.0, upper = mod.full), direction = 'backward',k = log(n), trace = 0)
+```
+
+Now we can try to find the predictors using a hybrid model which both adds and subtracts predictors to find the optimal model.
+These were the two models that we arrived at. As you can see, the predictors are the same as what we arrived at using the forward selection with AIC and the backward selection with AIC. That's because we were looking at AIC in this calculation. 
+cptlgain ~ income + edu + cptlloss + wrkclass + 
+    age + fam + wrkhrs
+cptlgain ~ age + wrkclass + edu + fam + cptlloss + 
+    wrkhrs + income
+```{r}
+# Finding predictors
+# Using stepwise selection (hybrid model)
+step(mod.0, scope = list(lower = mod.0, upper = mod.full))
+step(mod.full, scope = list(lower = mod.0, upper = mod.full))
