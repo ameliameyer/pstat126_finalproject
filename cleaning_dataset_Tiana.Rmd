@@ -1,0 +1,63 @@
+---
+title: "pstat_final_project"
+author: "Tiana Curry"
+date: "5/22/2020"
+output: html_document
+---
+
+**Checking uploading options to find the best option**
+```{r}
+# uploading data to test read.csv vs. read.table
+T1 <- read.csv("/Users/Tiana/Desktop/adult.csv", header = FALSE)
+T2 <- read.table("/Users/Tiana/Desktop/adult.txt")
+
+head(T1)
+head(T2)
+
+dim(T1)
+dim(T2)
+```
+We should use read.csv funciton since the read.table combines columns
+
+
+**loading data to create dataframe with column names**
+```{r}
+path <- "/Users/Tiana/Documents/GitHub/pstat126_finalproject/adult.csv" #path to adult file in directory 
+
+ColumnNames <- c("age","workclass","worked","fnlwgt","education","marital-status","occupation","relationship","race","sex","capital-gain","capital-loss","hours-per-week","native-country","income") # creating column names for adult.csv file 
+
+adult_df <- read.csv(path, header = FALSE, col.names = ColumnNames) # creating data frame with adult.csv files and ColumnNames vector
+
+dim(adult_df)  # finding the number of rows and columns in the df 
+head(adult_df, 10) # showing first 5 rows of created data frame
+```
+
+** Finding missing values labeled as " ?"**
+**Converting " ?" to official missing values NA**
+```{r}
+#filter(adult_df == " ?")  # finding values in df that contain " ?"
+adult_df[adult_df == " ?"] <- NA # replacing values == " ?" with NA 
+adult_df # showing df to see if there are NA values 
+colSums(is.na(adult_df)) # shows with columns contain NA values and how many are in each column 
+```
+
+
+** creating new datframe without missing values NA**
+```{r}
+CensusAdult_df <- na.omit(adult_df) # creating new df without rows that contain NA vlaues 
+dim(CensusAdult_df)  # finding the number of rows and columns in the dataframe 
+colSums(is.na(CensusAdult_df)) # checking which columns have NA, there shouldn't be anyvalues with NA 
+```
+
+```{r}
+export_path <- "/Users/Tiana/Documents/GitHub/pstat126_finalproject/CensusAdult_df.csv"
+write.csv(CensusAdult_df, export_path, row.names = FALSE)
+```
+**Resources**
+UCI Machine Leanring Repository Adult data set - https://archive.ics.uci.edu/ml/datasets/Adult
+Dealing with missing values - https://uc-r.github.io/missing_values
+Replacing values with NA - https://stackoverflow.com/questions/11036989/replace-all-0-values-to-na
+missing data - https://www.statmethods.net/input/missingdata.html
+Data cleaning R and the Tidyverse - https://towardsdatascience.com/data-cleaning-with-r-and-the-tidyverse-detecting-missing-values-ea23c519bc62
+filtering Rows that Contain a certian string using R - https://intellipaat.com/community/7401/filtering-row-which-contains-a-certain-string-using-dplyr
+Markdown cheat sheet - https://www.markdownguide.org/cheat-sheet/
