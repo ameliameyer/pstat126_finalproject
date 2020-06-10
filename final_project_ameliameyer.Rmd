@@ -1,0 +1,212 @@
+---
+title: "final_project"
+author: "Amelia Meyer"
+date: "6/3/2020"
+output: pdf_document
+---
+
+```{r}
+# adding the new dataset without the missing values
+adult <- read.csv('CensusAdult_df.csv', header = T)
+names(adult)
+attach(adult)
+```
+
+Names of the variables:
+age	workclass	worked	fnlwgt	education	marital.status	occupation	relationship	race	sex	capital.gain	capital.loss	hours.per.week	native.country	income
+
+We chose our response value as capital.gain
+
+Optimal model based on forward selection with AIC: capital.gain ~ income + fnlwgt + capital.loss + workclass + age + relationship + hours.per.week
+
+Our predictor values:
+x1:income
+x2:fnlwgt
+x3:capital.loss
+x4:workclass
+x5:age
+x6:relationship
+x7:hours.per.week
+```{r}
+# Finding predictors (refer to days 24 and 26)
+# Using forward selection (bottom up method) with AIC
+mod.0 <- lm(capital.gain ~ 1, data = adult) 
+mod.full <- lm(capital.gain ~., data = adult) # including all predictors in lm()
+step(mod.0, scope = list(lower = mod.0, upper = mod.full), direction = "forward") #Uses AIC by default
+```
+
+Optimal model using forward selection with BIC:
+capital.gain~income + fnlwgt + capital.loss + workclass + age
+
+Our predictors:
+x1:income
+x2:fnlwgt
+x3:capital.loss
+x4:workclass
+x5:age
+```{r}
+# Finding predictors (see days 24 and 26)
+# Using forward selection (bottom up method) with BIC
+## step() function will still print out "AIC", but in fact it is using BIC
+n <- length(adult$capital.gain) # sample size
+step(mod.0, scope = list(lower = mod.0, upper = mod.full), direction = 'forward',k = log(n), trace = 0)
+```
+
+
+Optimal model using backward selection with AIC:
+capital.gain~age + workclass + fnlwgt + relationship + capital.loss + hours.per.week + income
+
+Our predictors:
+x1:age
+x2:workclass
+x3:fnlwgt
+x4:relationship
+x5:capital.loss
+x6:hours.per.week
+x7:income
+
+```{r}
+# Finding predictors
+# Using backward selection (top down method) with AIC
+step(mod.full, scope = list(lower = mod.0, upper = mod.full), direction = 'backward')
+```
+
+Optimal model using backward selection with BIC:
+capital.gain ~ age + workclass + fnlwgt + capital.loss + income
+
+Our predictors: 
+x1: age
+x2: workclass
+x3: fnlwgt
+x4: capital.loss
+x5: income
+
+```{r}
+# Finding predictors
+# Using backward selection (top down method) with BIC
+step(mod.full, scope = list(lower = mod.0, upper = mod.full), direction = 'backward',k = log(n), trace = 0)
+```
+
+Optimal model using stepwise selection:
+capital.gain ~ age + workclass + fnlwgt + relationship + capital.loss + hours.per.week + income
+
+Our predictors:
+x1: age
+x2: workclass
+x3: fnlwgt
+x4: relationship
+x5: capital.loss
+x6: hours.per.week
+x7: income
+
+```{r}
+# Finding predictors
+# Using stepwise selection (hybrid model)
+step(mod.0, scope = list(lower = mod.0, upper = mod.full))
+step(mod.full, scope = list(lower = mod.0, upper = mod.full))
+```
+
+Optimal model using regsubsets:
+Based on rsq, our model should contain 2 predictors. Based on adjr2, our model should contain 8 predictors. Based on Cp, our model should contain 7 predictors. Based on BIC, our model should contain 6 predictors. We need to do further analysis in order to determine whether the 7th and 8th predictors are helpful. 
+
+```{r}
+library(leaps)
+mod.reg <- regsubsets(cbind(age,workclass,worked,fnlwgt,education,marital.status,occupation,relationship,race,sex,capital.loss,hours.per.week,native.country,income),capital.gain, data=adult)
+summary.reg <- summary(mod.reg)
+names(summary.reg)
+summary.reg$which
+summary.reg$rsq
+summary.reg$adjr2
+summary.reg$cp
+summary.reg$bic
+
+par(mfrow = c(2, 2))
+plot(summary.reg$rsq, xlab = "Number of Variables", ylab = "RSq", type = "b")
+
+plot(summary.reg$adjr2, xlab = "Number of Variables", ylab = "Adjusted RSq", type = "b")
+best_adj_r2 = which.max(summary.reg$adjr2)
+points(best_adj_r2, summary.reg$adjr2[best_adj_r2],
+       col = "red",cex = 2, pch = 20)
+
+plot(summary.reg$cp, xlab = "Number of Variables", ylab = "Cp", type = 'b')
+best_cp = which.min(summary.reg$cp[-c(length(summary.reg$cp))])
+points(best_cp, summary.reg$cp[best_cp],
+       col = "red", cex = 2, pch = 20)
+
+plot(summary.reg$bic, xlab = "Number of Variables", ylab = "BIC", type = 'b')
+best_bic = which.min(summary.reg$bic)
+points(best_bic, summary.reg$bic[best_bic],
+       col = "red", cex = 2, pch = 20)
+
+mod.full <- lm(capital.gain ~., data = adult) 
+mod.red <- lm(capital.gain ~income + fnlwgt + capital.loss + workclass + age)
+anova(mod.red, mod.full)
+```
+
+Scatterplots and avplots
+
+```{r}
+# looking at the relationships 
+pairs(~capital.gain + income + fnlwgt + capital.loss + workclass + age)
+
+library(car)
+scatterplotMatrix(~capital.gain + income + fnlwgt + capital.loss + workclass + age)
+```
+
+avPlots to test if we should add B7, marital.status
+The output should be linear in order for the predictor that we're thinking about adding to contain useful information in predicting Y
+
+```{r}
+# checking to see if predictors 'marital.status' and 'relationship' are necessary for our model
+
+# Running test for B7=0 aka marital.status=0
+# Added Varaible Plots
+full.lm <- lm(capital.gain ~ income + fnlwgt + capital.loss + workclass + age + marital.status)
+avPlots(full.lm, id=FALSE)
+
+# summary table 
+summary(full.lm)
+
+# Global F-test, $H_0: \beta_1 = \beta_2 = \beta_3 = 0$
+red.lm <- lm(capital.gain ~ 1)
+anova(red.lm, full.lm)
+
+# Global F-test, $H_0: \beta_1 = \beta_2 = \beta_3 = 0$ ( ? )
+anova(full.lm, red.lm)
+```
+
+avPlots to test if we should add B8, relationship
+The output should be linear in order for the predictor that we're thinking about adding to contain useful information in predicting Y
+
+```{r}
+# Running test for B8=0 aka relationship
+# First figure out the output of B7=0
+# Added Variable Plots
+# full2.lm <- lm(capital.gain ~ income + fnlwgt + capital.loss + workclass + age + relationship) or + marital.status + relationship
+# we know marital.status would go before relationship because that was in the output of the regsubsets function
+# avPlots(full2.lm, id=FALSE)
+
+# summary table 
+# summary(full2.lm)
+
+# Global F-test, $H_0: \beta_1 = \beta_2 = \beta_3 = 0$
+# red.lm <- lm(ACL ~ 1)
+# anova(red.lm, full2.lm)
+
+# Global F-test, $H_0: \beta_1 = \beta_2 = \beta_3 = 0$ ( ? )
+# anova(full2.lm, red.lm)
+```
+
+
+# avPlots to test whether or not we should include marital.status and relationship, do a partial F test to test the hypotheses 
+# when you're checking the pairs and scatterplotMatrices, LINE
+# You don't necessarily have to do B7=0 and B8=0, you can do B7=B8=0
+# Transformation for Multiple Linear Regression using powerTransform(), but don't transform categorical variables
+# if Rd Power = 0, log transformation
+# Once you have found the optimal model, check for outliers and high leverage points 
+# remove any outliers or high leverage points but if we do, mention that we did so because it'll change the model
+# get the intercept value and the value of each slope parameter so that we can evaluate the relationship with concrete data 
+# predict some x value, create a prediction interval
+# confidence interval 
+
+
