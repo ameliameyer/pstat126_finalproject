@@ -155,6 +155,7 @@ scatterplotMatrix(~capital.gain + income + fnlwgt + capital.loss + workclass + a
 
 avPlots to test if we should add B7, marital.status
 The output should be linear in order for the predictor that we're thinking about adding to contain useful information in predicting Y
+Don't need to include marital.status
 
 ```{r}
 # checking to see if predictors 'marital.status' and 'relationship' are necessary for our model
@@ -162,7 +163,7 @@ The output should be linear in order for the predictor that we're thinking about
 # Running test for B7=0 aka marital.status=0
 # Added Varaible Plots
 full.lm <- lm(capital.gain ~ income + fnlwgt + capital.loss + workclass + age + marital.status)
-avPlots(full.lm, id=FALSE)
+# avPlots(full.lm, id=FALSE)
 
 # summary table 
 summary(full.lm)
@@ -177,36 +178,167 @@ anova(full.lm, red.lm)
 
 avPlots to test if we should add B8, relationship
 The output should be linear in order for the predictor that we're thinking about adding to contain useful information in predicting Y
+Don't need to include relationship
 
 ```{r}
 # Running test for B8=0 aka relationship
 # First figure out the output of B7=0
 # Added Variable Plots
-# full2.lm <- lm(capital.gain ~ income + fnlwgt + capital.loss + workclass + age + relationship) or + marital.status + relationship
+full2.lm <- lm(capital.gain ~ income + fnlwgt + capital.loss + workclass + age + relationship) 
 # we know marital.status would go before relationship because that was in the output of the regsubsets function
 # avPlots(full2.lm, id=FALSE)
 
 # summary table 
-# summary(full2.lm)
+summary(full2.lm)
 
 # Global F-test, $H_0: \beta_1 = \beta_2 = \beta_3 = 0$
-# red.lm <- lm(ACL ~ 1)
-# anova(red.lm, full2.lm)
+red.lm <- lm(capital.gain ~ 1)
+anova(red.lm, full2.lm)
 
 # Global F-test, $H_0: \beta_1 = \beta_2 = \beta_3 = 0$ ( ? )
-# anova(full2.lm, red.lm)
+anova(full2.lm, red.lm)
 ```
 
+Power transformation using adjusted values for adult data
 
-# avPlots to test whether or not we should include marital.status and relationship, do a partial F test to test the hypotheses 
-# when you're checking the pairs and scatterplotMatrices, LINE
-# You don't necessarily have to do B7=0 and B8=0, you can do B7=B8=0
-# Transformation for Multiple Linear Regression using powerTransform(), but don't transform categorical variables
-# if Rd Power = 0, log transformation
-# Once you have found the optimal model, check for outliers and high leverage points 
-# remove any outliers or high leverage points but if we do, mention that we did so because it'll change the model
-# get the intercept value and the value of each slope parameter so that we can evaluate the relationship with concrete data 
-# predict some x value, create a prediction interval
-# confidence interval 
+Rd powers
+capital.loss: -1.74 
+education: 1.34
+age: 0.13
+hours.per.week: 0.95 
+
+```{r}
+# Transforming predictors using 1 + capital.loss
+library(car)
+
+capital.loss01<-with(adult,capital.loss+0.01)
+Trans.adult<-powerTransform(cbind(capital.loss01,education,age,hours.per.week)~1, adult)
+summary(Trans.adult)
+
+
+testTransform(Trans.adult, lambda = c(1, 1, 1, 0))
+Adult.Trans<-with(adult,data.frame(capital.loss01^(-1.74),education^(1.34),age^0.11,hours.per.week^0.95))
+pairs(Adult.Trans)
+```
+
+Now that we have our model (excluding categorical variables):
+
+capital.gain ~ capital.loss01^(-1.74)+education^(1.34)+age^(0.11)+hours.per.week^(.95)
+
+```{r}
+# Transforming the response
+
+adult$capital.gain01<-with(adult,capital.gain+0.01)
+Adult.power<-powerTransform(capital.gain01~.,Adult.Trans)
+summary(Adult.power)
+
+library(MASS)
+adult.lm<-lm(capital.gain01~.,data=Adult.Trans)
+boxcox(adult.lm)
+```
+
+We would transform capital.gain to the power of -0.88
+So our current model is looking like:
+
+capital.gain01^(-0.88) ~ income + capital.loss01^(-1.74) + education^(1.34) + age^(0.13) + workclass + hours.per.week^(0.95) 
+before entering the categorical indicator variables
+
+Indicator variables
+
+```{r}
+# caterogical variables:
+# income, k-1 = 1 indicators variable x1 (k-> <=50K, or >50K)
+# workclass, k-1 = 4, (k -> State-gov, Self-emp-not-inc, Private, Federal-gov, Local-gov) x2, x3, x4, x5
+
+capital.gain1<-capital.gain01^(-0.88)
+capital.loss1<-capital.loss01^(-1.74)
+education1<-education^(1.34)
+age1<-age^(0.11)
+hours.per.week1<-hours.per.week^(0.95)
+
+factor.lm <- lm(capital.gain1 ~ income) 
+summary(factor.lm)
+
+factor1.lm <- lm(capital.gain1 ~ workclass)
+summary(factor1.lm)
+```
+
+Fit the proper model
+
+```{r}
+# Nonparallel
+np.lm <- lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1 + income:education1 + income:age1 + income:hours.per.week1 + workclass:capital.loss1 + workclass:education1 + workclass:age1 + workclass:hours.per.week1, data = adult)
+```
+
+Now we need to do a partial F test to make sure we sure add our terms
+
+```{r}
+## Partial F Tests
+### Nonparallel vs. Parallel
+
+summary(np.lm)
+
+#equivalent to the partial F test
+null.lm <- lm(capital.gain1 ~ 1, data = adult) # Intercept only
+anova(null.lm, np.lm)
+
+# We still would reject our null hyp
+# At least one of the predictors matters
+
+# if we removed all indicator variables
+par.lm <- lm(capital.gain1 ~ income + capital.loss1 + education1 +age1 + age1 + workclass + hours.per.week1, data = adult) 
+anova(par.lm, np.lm) # always do the smaller model first
+
+# Non parallel model is preferred to parallel model
+
+summary(par.lm)
+
+```
+
+Since we're using the nonparaller model, we need to figure out which predictors can be taken out of the following model:
+
+capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1 + income:education1 + income:age1 + income:hours.per.week1 + workclass:capital.loss1 + workclass:education1 + workclass:age1 + workclass:hours.per.week1
+
+H0: B7=0 vs H1: B7!=0
+p value is 1.233e-10 *** so reject null, B7 matters
+
+```{r}
+# Is income:capital.loss1 a useful predictor given that the other predictors are in the model?
+fullmod.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1 + income:education1 + income:age1 + income:hours.per.week1 + workclass:capital.loss1 + workclass:education1 + workclass:age1 + workclass:hours.per.week1)
+
+redmod.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1 + income:education1 + income:age1 + workclass:capital.loss1 + workclass:education1 + workclass:age1 + workclass:hours.per.week1)
+anova(redmod.lm,fullmod.lm)
+
+```
+
+H0: B8=0 vs B8!=0
+p value is 
+
+Others:
+```{r}
+# Is a useful predictor given that the other predictors are in the model?
+redmod.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1)
+anova(redmod.lm, full.lm)
+
+# Is a useful predictor given that the other predictors are in the model?
+redmod.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1)
+anova(redmod.lm, full.lm)
+
+# Is a useful predictor given that the other predictors are in the model?
+redmod.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1)
+anova(redmod.lm, full.lm)
+
+# Is a useful predictor given that the other predictors are in the model?
+redmod.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1)
+anova(redmod.lm, full.lm)
+
+# Is a useful predictor given that the other predictors are in the model?
+redmod.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1)
+anova(redmod.lm, full.lm)
+
+# Is a useful predictor given that the other predictors are in the model?
+redmod.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1)
+anova(redmod.lm, full.lm)
+```
 
 
