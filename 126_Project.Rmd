@@ -58,7 +58,7 @@ census.data$capital.loss1 <- with(census.data, capital.loss + 0.01)
 #looking for what to transform
 pairs(census.data[c('age', 'capital.loss1', 'hours.per.week', 'education')])
 #transform numeric predictors
-trans.census <- powerTransform(cbind(capital.loss, age, hours.per.week, education) ~ 1, census.data)
+trans.census <- powerTransform(cbind(capital.loss1, age, hours.per.week, education) ~ 1, census.data)
 summary(trans.census)
 #new transformations
 census.trans <- with(census.data, data.frame(capital.loss^(-1.74), age^(.11), hours.per.week^(.95), education^(1.34)))
@@ -66,8 +66,8 @@ pairs(census.trans)
 #fixing capital.gain
 capital.gain1 <- with(census.data, capital.gain + 0.01)
 #transforming response
-census.power <- powerTransform(capital.gain1~., census.trans)
-summary(census.power)
+#census.power <- powerTransform(capital.gain~.,census.trans)
+#summary(census.power)
 #therefore capital.gain^(-.88) ~ capital.loss^(-1.74) + age^(.11) +      hours.per.week^(.95) + education^(1.34) + workclass + income
 capital.gain2 <- capital.gain^(-0.88) 
 capital.loss2 <- capital.loss^(-1.74) 

@@ -1,0 +1,105 @@
+---
+title: <center>Using Multilinear Regression Analysis to Examine the Impacts on Capital Gain</center>
+author: <center>By Tiana Curry, Amelia Meyer, Hailey Neely</center>
+date: <center>PSTAT 126 Spring 2020 Due 6/12/2020<center>
+output: html_document
+---
+
+
+#### **ABSTRACT**
+
+For this analysis we chose to use the Census Income data set from the UC Irvine Machine Learning Repository because it seemed to provide the most interesting and varied data. After looking at this data, we chose capital gain as our response variable because capital gain is most likely to have a relationship with the rest of the variables. We are interested in learning about how relevant the other variables (age, workclass, worked, fnlwgt, education, marital status, occupation, relationship, race, sex, capital loss, hours per week, native country and income ) are when trying to predict the response for capital gain. 
+    
+#### **PROBLEM AND MOTIVATION**200 words
+
+#### **DATA**
+
+#### **QUESTIONS OF INTEREST**
+
+We are interested in answering the following questions: (1) What is the predicted value of capital gain when capital loss is 1000? (2) Is there a strong relationship between education and capital gain? (3) Is there a strong relationship between hours per week and capital gain? (4) Does having a lower education level equate to a lower capital gain? and (5) Is there a significant difference in the capital gain at age 18 and age 40.  
+    
+#### **REGRESSION METHODS**
+
+##### ***Different Regression Methods Used***
+
+For this data, we will be using many different methods to answer our questions of interest. For our first question, once we have the final model, we will use it to predict the mean response with the given value for capital loss. For the second and third question we will look at the correlation between the variables. For the fourth question, we will look at the response when education is lower. Finally for the fifth question, we will look at the mean difference in capital gain between the two age groups
+
+##### ***Exploratory Analysis***
+
+To get a sense of our data, we first used the pairs function to look for any violations in the linearity, normal, or equal variance assumptions. From this we saw that the variables capital gain and capital loss, is 0 for many points but can be in the thousands. We can’t use power transformations or logs because of the 0 values, so it was necessary to add 0.01 to each value in each of those variables. We also plotted a residual vs. fitted values plot to look for any violations in linearity and equal variance. We saw that these were violated so we continued to transform the predictors and response variables. This plot also showed that we are not dealing with a polynomial regression.  Finally, we plotted the quantile-quantile plot to check for any violations in the normality assumption and found that the data was heavy skewed, so we again confirmed that we need to transform the response. None of these findings are surprising since we have so many data points and variables and it would be expected to have violations. 
+
+#### **REGRESSION ANALYSIS, RESULTS AND INTERPRETATION**
+
+We first needed to narrow down our variables. To do this, we first used the step function to do the forward, backward and stepwise selection process. We wanted to use a more thorough process so we used the regsubsets function. This led us to a model with age, workclass, education, capital.loss, hours.per.week, and income based on the BIC value. However, marital status and relationship were good candidates based on the other information criteria.We decided to do two partial-F tests to determine if we should add these two variables. The null hypothesis for both of these tests is that the coefficients of these variables are 0 meaning that they are not necessary in our regression. The alternative hypothesis is that they do not equal 0. If the p-value is under our chosen alpha value, which is the standard 0.05, we reject the null hypothesis. However, the p-value for marital status was 0.8436 and 0.8007 for relationship, which are both greater than 0.05. Therefore, we fail to reject the null hypothesis and continue with our original model.
+
+After we narrowed down our predictors, we looked at the residuals vs. fitted plot to find any violations in linearity and equal variance. We noticed that there was minor fanning, violating the equal variance assumption. We also looked at the quantile-quantile plot to find any violations in normality. We found that the normality was heavy skewed. This led us to transform both the response variable and the predictor variables.After adjusting for the 0 values in some of our variables and removing the categorical variables, we used the powerTransform function to transform the numeric predictors. The transformations that we required after this function were, capital.loss^(-1.74), education^(1.34), age^(0.11), hours.per.week^(0.95). Next, we used the powerTransform function to transform the response variable. This led us to capital.gain^(-0.88). After these transformations, our plots were not perfect but they were certainly better, with the quantile-quantile plot looking less skewed and the points on the residuals vs. fitted plot looking more evenly distributed.
+Now that we have transformed the numeric variables, we now have to accommodate for the categorical predictors that we have, specifically workclass and income. To do this, we created interaction terms between the numerical and categorical variables for each category. However, we made sure to not make interaction terms between two categorical variables or two numerical variables.This gave us many more predictors to do partial F-tests on to make sure they were valuable, under alpha equals 0.05. First we tested if any interaction term was relevant with the null hypothesis that all of the coefficients of the interaction terms are 0 and the alternative hypothesis that at least one of these coefficients do not equal 0. The p-value was 2.2e-16 *** so at least one of the interaction terms is needed. 
+
+Next, we tested income:capital.loss with the null hypothesis that its coefficient equals 0 and the alternative hypothesis that its coefficient does not equal 0. The p-value was 1.233e-10 *** so we rejected the null hypothesis and this interaction term is useful. Next, we tested income:education with the null hypothesis that its coefficient equals 0 and the alternative hypothesis that its coefficient does not equal 0. The p-value was 2.2e-16 *** so we rejected the null hypothesis and this interaction term is useful. Next, we tested income:age with the null hypothesis that its coefficient equals 0 and the alternative hypothesis that its coefficient does not equal 0. The p-value was 6.22e-16 *** so we rejected the null hypothesis and this interaction term is useful. Next, we tested income:hours.per.week with the null hypothesis that its coefficient equals 0 and the alternative hypothesis that its coefficient does not equal 0. The p-value was 1.233e-10 *** so we rejected the null hypothesis and this interaction term is useful. Next, we tested workclass:capital.loss with the null hypothesis that its coefficient equals 0 and the alternative hypothesis that its coefficient does not equal 0. The p-value was 0.002405 ** so we rejected the null hypothesis and this interaction term is useful. Next, we tested workclass:education with the null hypothesis that its coefficient equals 0 and the alternative hypothesis that its coefficient does not equal 0. The p-value was 2.2e-16 *** so we rejected the null hypothesis and this interaction term is useful. Next, we tested workclass:age with the null hypothesis that its coefficient equals 0 and the alternative hypothesis that its coefficient does not equal 0. The p-value was 1.215e-05 *** so we rejected the null hypothesis and this interaction term is useful. Next, we tested workclass:hours.per.week with the null hypothesis that its coefficient equals 0 and the alternative hypothesis that its coefficient does not equal 0. The p-value was 0.9253 so we failed to reject the null hypothesis and this interaction term is NOT useful. Finally, we tested workclass:age with the null hypothesis that its coefficient equals 0 and the alternative hypothesis that its coefficient does not equal 0. The p-value was 1.215e-05 *** so we rejected the null hypothesis and this interaction term is useful. 
+
+NEW Once we had our model with the transformed variables, categorical variables, and interaction terms, we needed to check for outliers. With our studentized residual test, we found many points that exceeded the rule of thumb criteria. However, upon inspecting the plots, we decided not to remove any points because there were so many and it would have changed too much about our sample. We also had a similar conclusion when finding any high leverage points using Cook’s distance, so we again decided to keep all of our data points.We then had our final model and it was time to answer our desired questions. To answer what the predicted mean response is when capital loss is 1000, we used the predict function to make a 95% confidence interval. However, the output that we got was unusual. We got many different values for this answer so we couldn’t come to a conclusion. To answer if there is a strong relationship between education and capital gain, we looked at the correlation coefficient of regressing capital gain only on education. The coefficient of determination value was 0.03212, which means that 3.2% of the variability in capital gain was explained by education. Therefore there is a weak relationship. This information was surprising. To answer if there is a strong relationship between hours per week and capital gain, we looked at the correlation coefficient of regressing capital gain only on hours per week. The coefficient of determination value was 0.009176, which means that 0.9% of the variability in capital gain was explained by hours per week. Therefore there is a very weak relationship. This information is not surprising. To answer if there is a significant difference in the capital gain at age 18 and age 40, we used the predict function to predict for a new response. For this question we again got many different outputs so we could not come to a conclusion.
+    
+#### **CONCLUSION**200 words
+
+#### **APPENDICES**
+
+##### ***Appendix 1***
+
+##### ***Appendix 2***
+
+We'll be using data from the "Census Income Data Set" for our project.
+```{r}
+#reading data 
+#getwd()
+census.data <- read.csv('CensusAdult_df.csv', header = T)
+View(census.data)
+#establishing variables from data
+attach(data)
+#choosing best model with regsubset
+library(leaps)
+mod.reg <- regsubsets(cbind(age, workclass, worked, fnlwgt, education, marital.status, occupation, relationship, race, sex, capital.loss, hours.per.week, native.country, income), capital.gain, data = census.data)
+summary.reg <- summary(mod.reg)
+names(summary.reg)
+summary.reg$which
+summary.reg$rsq
+summary.reg$adjr2
+summary.reg$cp
+summary.reg$bic
+#based on the bic the we choose   capital.gain ~ age + workclass + education +        capital.loss + hours.per.week + income
+#seeing if relationship and marital status are usefull
+#full regression based on regsubsets
+full.lm <- lm(capital.gain ~ age + workclass + education + capital.loss + 
+      hours.per.week + income + marital.status + relationship)
+#reduced based on bic
+redAWECHIM.lm <- lm(capital.gain ~ age + workclass + education + capital.loss + 
+      hours.per.week + income + marital.status)
+#partial F test for marital status
+anova(redAWECHIM.lm, full.lm)
+#partial F test for relationship 
+redAWECHIR.lm <- lm(capital.gain ~ age + workclass + education + capital.loss + 
+      hours.per.week + income + relationship)
+anova(redAWECHIR.lm, full.lm)
+#therefor the model that we will use is
+census.lm <- capital.gain ~ age + workclass + education + capital.loss +   hours.per.week + income
+#fixing capital loss and gain
+census.data$capital.loss1 <- with(census.data, capital.loss + 0.01)
+#looking for what to transform
+pairs(census.data[c('age', 'capital.loss1', 'hours.per.week', 'education')])
+#transform numeric predictors
+trans.census <- powerTransform(cbind(capital.loss1, age, hours.per.week, education) ~ 1, census.data)
+summary(trans.census)
+#new transformations
+census.trans <- with(census.data, data.frame(capital.loss^(-1.74), age^(.11), hours.per.week^(.95), education^(1.34)))
+pairs(census.trans)
+#fixing capital.gain
+capital.gain1 <- with(census.data, capital.gain + 0.01)
+#transforming response
+#census.power <- powerTransform(capital.gain~.,census.trans)
+#summary(census.power)
+#therefore capital.gain^(-.88) ~ capital.loss^(-1.74) + age^(.11) +      hours.per.week^(.95) + education^(1.34) + workclass + income
+capital.gain2 <- capital.gain^(-0.88) 
+capital.loss2 <- capital.loss^(-1.74) 
+age2 <- age^(0.11) 
+hours.per.week2 <- hours.per.week^(0.95)
+education2 <- education^(1.34)
+```
