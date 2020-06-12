@@ -61,3 +61,15 @@ missing data - https://www.statmethods.net/input/missingdata.html
 Data cleaning R and the Tidyverse - https://towardsdatascience.com/data-cleaning-with-r-and-the-tidyverse-detecting-missing-values-ea23c519bc62
 filtering Rows that Contain a certian string using R - https://intellipaat.com/community/7401/filtering-row-which-contains-a-certain-string-using-dplyr
 Markdown cheat sheet - https://www.markdownguide.org/cheat-sheet/
+
+** selecting dataframe with rows that contain one NA
+```{r}
+names(adult_df) #pulling column names of df
+
+colSums(is.na(adult_df)) # show each column with the total number of NA values in each column
+
+# creating subset df with condition of 3 columns with NA values
+subset_adult_df <- subset(adult_df, is.na(adult_df$workclass)|is.na(adult_df$occupation)| is.na(adult_df$native.country))
+
+subset_adult_df # can use this df to get more information about observation with missing data
+```
