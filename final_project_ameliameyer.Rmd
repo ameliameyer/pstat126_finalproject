@@ -13,7 +13,22 @@ attach(adult)
 ```
 
 Names of the variables:
-age	workclass	worked	fnlwgt	education	marital.status	occupation	relationship	race	sex	capital.gain	capital.loss	hours.per.week	native.country	income
+
+```{r}
+first.mod<-lm(capital.gain~age+workclass+worked	+fnlwgt	+ education	+ marital.status	+ occupation	+ relationship	+ race	+ sex	+ capital.loss	+ hours.per.week	+ native.country	+ income, data = adult)
+efirst <- resid(first.mod)
+yhatfirst <- fitted(first.mod)
+
+# well-behaved residuals plot with minor fanning pattern
+plot(yhatfirst, efirst, xlab = 'Fitted Values', ylab = 'Residuals')
+abline(h = 0, lty = 2)
+
+#normality 
+qqnorm(efirst)
+qqline(efirst)
+
+```
+
 
 We chose our response value as capital.gain
 
@@ -51,7 +66,6 @@ x5:age
 n <- length(adult$capital.gain) # sample size
 step(mod.0, scope = list(lower = mod.0, upper = mod.full), direction = 'forward',k = log(n), trace = 0)
 ```
-
 
 Optimal model using backward selection with AIC:
 capital.gain~age + workclass + fnlwgt + relationship + capital.loss + hours.per.week + income
@@ -143,19 +157,7 @@ mod.red <- lm(capital.gain ~income + fnlwgt + capital.loss + workclass + age)
 anova(mod.red, mod.full)
 ```
 
-Scatterplots and avplots
-
-```{r}
-# looking at the relationships 
-pairs(~capital.gain + income + fnlwgt + capital.loss + workclass + age)
-
-library(car)
-scatterplotMatrix(~capital.gain + income + fnlwgt + capital.loss + workclass + age)
-```
-
-avPlots to test if we should add B7, marital.status
-The output should be linear in order for the predictor that we're thinking about adding to contain useful information in predicting Y
-Don't need to include marital.status
+Marital.status is not a usefule predictor
 
 ```{r}
 # checking to see if predictors 'marital.status' and 'relationship' are necessary for our model
@@ -176,9 +178,7 @@ anova(red.lm, full.lm)
 anova(full.lm, red.lm)
 ```
 
-avPlots to test if we should add B8, relationship
-The output should be linear in order for the predictor that we're thinking about adding to contain useful information in predicting Y
-Don't need to include relationship
+Relationship is not a useful predictor
 
 ```{r}
 # Running test for B8=0 aka relationship
@@ -197,6 +197,21 @@ anova(red.lm, full2.lm)
 
 # Global F-test, $H_0: \beta_1 = \beta_2 = \beta_3 = 0$ ( ? )
 anova(full2.lm, red.lm)
+```
+
+Look at the plots for the current model, before transformation:
+```{r}
+second.mod<-lm(capital.gain~income+capital.loss+education+age+workclass+hours.per.week,data=adult)
+esecond <- resid(second.mod)
+yhatsecond <- fitted(second.mod)
+
+# well-behaved residuals plot with minor fanning pattern
+plot(yhatsecond, esecond, xlab = 'Fitted Values', ylab = 'Residuals')
+abline(h = 0, lty = 2)
+
+#normality seems okay
+qqnorm(esecond)
+qqline(esecond)
 ```
 
 Power transformation using adjusted values for adult data
@@ -242,6 +257,32 @@ So our current model is looking like:
 
 capital.gain01^(-0.88) ~ income + capital.loss01^(-1.74) + education^(1.34) + age^(0.13) + workclass + hours.per.week^(0.95) 
 before entering the categorical indicator variables
+
+Looking at the plots for the transformed response and predictors
+
+Model slightly more condensed with Normal Q-Q Plot
+
+```{r}
+
+capital.gain1<-capital.gain01^(-0.88)
+capital.loss1<-capital.loss01^(-1.74)
+education1<-education^(1.34)
+age1<-age^(0.11)
+hours.per.week1<-hours.per.week^(0.95)
+
+aftrans.mod<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1	+ workclass + hours.per.week1	, data = adult)
+eaftrans <- resid(aftrans.mod)
+yhataftrans <- fitted(aftrans.mod)
+
+# well-behaved residuals plot with minor fanning pattern
+plot(yhataftrans, eaftrans, xlab = 'Fitted Values', ylab = 'Residuals')
+abline(h = 0, lty = 2)
+
+#normality seems okay
+qqnorm(eaftrans)
+qqline(eaftrans)
+
+```
 
 Indicator variables
 
@@ -300,45 +341,185 @@ Since we're using the nonparaller model, we need to figure out which predictors 
 capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1 + income:education1 + income:age1 + income:hours.per.week1 + workclass:capital.loss1 + workclass:education1 + workclass:age1 + workclass:hours.per.week1
 
 H0: B7=0 vs H1: B7!=0
-p value is 1.233e-10 *** so reject null, B7 matters
+p value is 1.233e-10 *** so reject null, income:capital.loss1 is a useful predictor
 
 ```{r}
 # Is income:capital.loss1 a useful predictor given that the other predictors are in the model?
-fullmod.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1 + income:education1 + income:age1 + income:hours.per.week1 + workclass:capital.loss1 + workclass:education1 + workclass:age1 + workclass:hours.per.week1)
+full.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1 + income:education1 + income:age1 + income:hours.per.week1 + workclass:capital.loss1 + workclass:education1 + workclass:age1 + workclass:hours.per.week1)
 
-redmod.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1 + income:education1 + income:age1 + workclass:capital.loss1 + workclass:education1 + workclass:age1 + workclass:hours.per.week1)
-anova(redmod.lm,fullmod.lm)
+redB7.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1 + income:education1 + income:age1 + workclass:capital.loss1 + workclass:education1 + workclass:age1 + workclass:hours.per.week1)
+anova(redB7.lm,full.lm)
 
 ```
 
 H0: B8=0 vs B8!=0
-p value is 
+p value is 2.2e-16 *** so income:education1 is a useful predictor
 
-Others:
 ```{r}
-# Is a useful predictor given that the other predictors are in the model?
-redmod.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1)
-anova(redmod.lm, full.lm)
-
-# Is a useful predictor given that the other predictors are in the model?
-redmod.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1)
-anova(redmod.lm, full.lm)
-
-# Is a useful predictor given that the other predictors are in the model?
-redmod.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1)
-anova(redmod.lm, full.lm)
-
-# Is a useful predictor given that the other predictors are in the model?
-redmod.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1)
-anova(redmod.lm, full.lm)
-
-# Is a useful predictor given that the other predictors are in the model?
-redmod.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1)
-anova(redmod.lm, full.lm)
-
-# Is a useful predictor given that the other predictors are in the model?
-redmod.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1)
-anova(redmod.lm, full.lm)
+# Is income:education1 a useful predictor given that the other predictors are in the model?
+redB8.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1 + income:age1 + income:hours.per.week1 + workclass:capital.loss1 + workclass:education1 + workclass:age1 + workclass:hours.per.week1)
+anova(redB8.lm, full.lm)
 ```
 
+H0: B9=0 vs H1: B9!=0
+p value is 6.22e-16 *** so income:age1 is a useful predictor
+
+```{r}
+redB9.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1 + income:education1 + income:hours.per.week1 + workclass:capital.loss1 + workclass:education1 + workclass:age1 + workclass:hours.per.week1)
+anova(redB9.lm, full.lm)
+```
+
+H0: B10=0 vs H1: B10!=0
+p value is 1.233e-10 *** so income:hours.per.week1 is a useful predictor
+
+```{r}
+redB10.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1 + income:education1 + income:age1 + workclass:capital.loss1 + workclass:education1 + workclass:age1 + workclass:hours.per.week1)
+anova(redB10.lm,full.lm)
+```
+
+H0: B11=0 vs H1: B11!=0
+p value is 0.002405 ** so workclass:capital.loss1 is a useful predictor for alpha = 0.05, but it's not a usefule predictor for alpha=0.001
+
+```{r}
+redB11.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1 + income:education1 + income:age1 + income:hours.per.week1 + workclass:education1 + workclass:age1 + workclass:hours.per.week1)
+anova(redB11.lm, full.lm)
+```
+
+H0: B12=0 vs H1: B12!=0
+p value is 2.2e-16 *** so workclass:education1 is a useful predictor
+
+```{r}
+redB12.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1 + income:education1 + income:age1 + income:hours.per.week1 + workclass:capital.loss1 + workclass:age1 + workclass:hours.per.week1)
+anova(redB12.lm, full.lm)
+```
+
+H0: B13=0 vs H1: B13!=0
+p value is 1.215e-05 *** so workclass:age1 is a useful predictor
+
+```{r}
+redB13.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1 + income:education1 + income:age1 + income:hours.per.week1 + workclass:capital.loss1 + workclass:education1 + workclass:hours.per.week1)
+anova(redB13.lm,full.lm)
+```
+
+H0: B14=0 vs H1: B14!=0
+p value is 0.9253 so workkclass:hours.per.week1 is not a useful predictor
+
+```{r}
+redB14.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1 + income:education1 + income:age1 + income:hours.per.week1 + workclass:capital.loss1 + workclass:education1 + workclass:age1)
+anova(redB14.lm,full.lm)
+```
+
+Look at scatterplotMatrix to check the marginal relationships
+
+```{r}
+scatterplotMatrix(~capital.gain1 + income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1 + income:education1 + income:age1 + income:hours.per.week1 + workclass:capital.loss1 + workclass:education1 + workclass:age1)
+```
+
+Diagnostic assumptions:
+
+```{r}
+# Residual analysis (Model Evaluation)
+
+final.mod <- lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1, data = adult)
+e <- resid(final.mod)
+yhat <- fitted(final.mod)
+
+# well-behaved residuals plot with minor fanning pattern
+plot(yhat, e, xlab = 'Fitted Values', ylab = 'Residuals')
+abline(h = 0, lty = 2)
+
+#normality seems okay
+qqnorm(e)
+qqline(e)
+
+#large p-value: residuals are normal
+# shapiro.test(e)
+# can't do because dample size exceeds 5000
+ncvTest(~capital.gain1 + income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1 + income:education1 + income:age1 + income:hours.per.week1 + workclass:capital.loss1 + workclass:education1 + workclass:age1)
+
+## Interaction term
+int.mod <- lm(capital.gain1 ~ income:capital.loss1 + income:education1 + income:age1 + income:hours.per.week1 + workclass:capital.loss1 + workclass:education1 + workclass:age1 , data = adult)
+
+#no interaction effect exists
+anova(final.mod, int.mod)
+```
+
+Checking for outliers (unusual y)
+
+```{r}
+#find studentized residuals
+fit.all <- lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1 + income:education1 + income:age1 + income:hours.per.week1 + workclass:capital.loss1 + workclass:education1 + workclass:age1, data=adult)
+(rst <-  rstudent(fit.all))
+#find the point with the largest studentized residual
+rst <- abs(rst)
+which(rst > 3); which(rst > 2)
+
+#find standardized residuals
+fit1.all <- lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1 + income:education1 + income:age1 + income:hours.per.week1 + workclass:capital.loss1 + workclass:education1 + workclass:age1, data=adult)
+rstandard(fit1.all)
+
+#find the point with the largest standardized residual
+rs <- abs(rstandard(fit1.all))
+which(rs == max(rs))
+```
+
+Checking for high leverage points (unusual x)
+
+```{r}
+#find leverages
+## Cook's Distance
+fit2.all<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1 + income:education1 + income:age1 + income:hours.per.week1 + workclass:capital.loss1 + workclass:education1 + workclass:age1, data=adult)
+ds <- cooks.distance(fit2.all)
+round(ds,5)
+which(ds > 4/(30163-13-1))
+```
+
+When we did the calculation for the outliers and the high leverage points we got thousands of points which means that they aren't in fact outliers or high leverage points, they're just representative of the spread out trend of our data. The points seen as outliers and high leverage don't stay from the general trend of our data, therefore they are imporant and should not be removed. 
+
+
+Questions we're trying to answer:
+```{r}
+# 1 What is the predicted value of capital gain when capital loss is 1000? 
+
+#Confidence interval for Mean Response
+fullmod.lm<-lm(capital.gain1 ~ income + capital.loss1 + education1 + age1 + workclass + hours.per.week1 + income:capital.loss1 + income:education1 + income:age1 + income:hours.per.week1 + workclass:capital.loss1 + workclass:education1 + workclass:age1 + workclass:hours.per.week1)
+
+clmean <- mean(capital.loss1)
+edumean <- mean(education1)
+agemean <- mean(age1)
+hpwmean <- mean(hours.per.week1)
+iclmean <-  mean(income:capital.loss1)
+iedumean <- mean(income:education1)
+iagemean <- mean(income:age1)
+iinmean <- mean(income:hours.per.week1)
+wccmean <- mean(workclass:capital.loss1)
+wcedumean <- mean(workclass:education1)
+wclagemean <- mean(workclass:age1)
+wchpwmean <- mean(workclass:hours.per.week1)
+(new <- data.frame(income, clmean, edumean,agemean,hpwmean,iclmean,iedumean,iagemean,iinmean,wccmean,wcedumean,wclagemean,wchpwmean))
+
+predict(fullmod.lm, new, interval = 'confidence', level = 0.95)
+
+# 2 Is there a strong relationship between education and capital gain?
+capital.gain1_vs_edu.lm<-lm(capital.gain1~education1)
+summary(capital.gain1_vs_edu.lm)
+# adjusted rsq is 0.03212 so very very small positive relationship
+
+# 3 Is there a strong relationship between hours per week and capital gain? 
+capital.gain1_vs_hours.per.week1.lm<-lm(capital.gain1~hours.per.week1)
+summary(capital.gain1_vs_hours.per.week1.lm)
+# adjusted rsq is 0.009176 so very small positive relationship
+
+# 5 Is there a significant difference in the capital gain at age 18 and age 40 using a Prediction interval for a new response
+
+age.lm <- lm(capital.gain1 ~ age1)
+# Expected capital.gain at age 18
+predict(age.lm , data.frame(age1 = 18 ),
+        interval = 'prediction', level = 0.95)
+# Expected capital.gain at 40
+predict(age.lm , data.frame(age = 40),
+        interval = 'prediction', level = 0.95)
+
+
+```
 
